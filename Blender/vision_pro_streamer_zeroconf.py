@@ -85,7 +85,8 @@ zeroconf_instance = None
 zeroconf_browser = None
 last_model_change_time = 0.0
 last_model_change_time_lock = threading.Lock()
-is_exporting_usdz = False 
+is_exporting_usdz = False
+export_lock = threading.Lock() 
 
 def depsgraph_handler_update_time(scene):
     """
@@ -440,86 +441,94 @@ def stream_scene_data(sock, stop_event):
                     print("DEBUG: User is active. Proceeding with stream update.")
             # --- End Stream Control Logic ---
 
-            # Create a unique temporary directory for each export cycle to prevent conflicts
-            temp_dir = tempfile.mkdtemp(prefix="blender_vppro_")
-            print(f"DEBUG: Created temporary directory: {temp_dir}")
-            
-            temp_usdz_path = os.path.join(temp_dir, "scene_export.usdz")
-            
-            usdz_data = None 
-            event = threading.Event() # Event to signal completion of main-thread export
-
-            # Function to be executed on Blender's main thread for USDZ export
-            def export_usdz_in_main_thread_cb():
-                nonlocal usdz_data
-                global is_exporting_usdz # Declare global to modify the flag
-                try:
-                    is_exporting_usdz = True # Set flag to True: subsequent depsgraph updates will be ignored
-                    print("DEBUG: Initiating USDZ export in main thread.") 
-                    if bpy.context.view_layer is None:
-                        print("WARNING: No active view layer context for USDZ export. Export might fail.") 
-                    
-                    # Call Blender's USD exporter.
-                    # Note: Arguments used here are generally supported across recent Blender versions.
-                    # If specific arguments cause "unrecognized keyword" errors in your Blender build,
-                    # remove them. Blender's exporter intelligently bundles textures into USDZ.
-                    bpy.ops.wm.usd_export(
-                        filepath=temp_usdz_path, 
-                        check_existing=False,
-                        # Standard export options for a robust USDZ output
-                        selected_objects_only=False,  # Export all visible objects
-                        export_materials=True,        # Export materials (as USD Preview Surface)
-                        export_normals=True,          # Export vertex normals
-                        export_uvmaps=True,           # Export UV maps
-                        export_mesh_colors=False,     # Export vertex colors
-                        export_animation=False,       # Export animations
-                        export_cameras=False,         # Export scene cameras
-                        export_lights=False           # Export scene lights
-                    )
-                    with open(temp_usdz_path, 'rb') as f: 
-                        usdz_data = f.read() 
-                    
-                    print(f"DEBUG: USDZ exported to temp file and read: {len(usdz_data)} bytes.") 
-
-                except (RuntimeError, OSError, IOError) as e:
-                    print(f"ERROR: USDZ Export Error: {e}") 
-                    error_msg = str(e)
-                    bpy.app.timers.register(lambda msg=error_msg: (bpy.context.scene.vision_pro_streamer_props.status_message_realtime_update(f"Export Error: {msg}"), None)[1])
-                    usdz_data = None
-                finally:
-                    is_exporting_usdz = False # Reset flag after export attempt
-                    event.set() # Signal the waiting thread that export is complete
-                return None # Timer callback must return None or a float
-            
-            # Schedule the export function to run on Blender's main thread and wait for it.
-            bpy.app.timers.register(export_usdz_in_main_thread_cb, first_interval=0.01)
-            event.wait(timeout=5) # Wait up to 5 seconds for export to complete
-
-            # If export failed or timed out, skip sending this cycle
-            if not event.is_set() or usdz_data is None: 
-                print("DEBUG: USDZ export timed out or failed. Skipping send.") 
-                bpy.app.timers.register(lambda: (bpy.context.scene.vision_pro_streamer_props.status_message_realtime_update("USDZ export failed/timed out."), None)[1])
-                time.sleep(1 / bpy.context.scene.render.fps) # Sleep to avoid busy-waiting on rapid failure
+            # Check if export is already in progress
+            if not export_lock.acquire(blocking=False):
+                print("DEBUG: Export already in progress, skipping this cycle.")
                 continue
 
-            # Prepare data for sending: 4-byte length prefix + USDZ data
-            data_length = len(usdz_data) 
-            header = data_length.to_bytes(4, 'big')
-
-            print(f"DEBUG: Attempting to send {data_length} bytes to Vision Pro.")
             try:
-                sock.sendall(header + usdz_data) # Send the USDZ data
-                print("DEBUG: Data sent successfully.")
+                # Create a unique temporary directory for each export cycle to prevent conflicts
+                temp_dir = tempfile.mkdtemp(prefix="blender_vppro_")
+                print(f"DEBUG: Created temporary directory: {temp_dir}")
                 
-                # Update status on UI after successful send
-                fps = bpy.context.scene.render.fps
-                bpy.app.timers.register(lambda dl=data_length, f=fps: (bpy.context.scene.vision_pro_streamer_props.status_message_realtime_update(f"Sent {dl/1024:.2f} KB. FPS: {f}"), None)[1])
+                temp_usdz_path = os.path.join(temp_dir, "scene_export.usdz")
+                
+                usdz_data = None 
+                event = threading.Event() # Event to signal completion of main-thread export
 
-                # Pause briefly to control streaming rate
-                time.sleep(1 / fps)
-            except (socket.error, OSError) as e:
-                print(f"ERROR: Failed to send data: {e}")
-                raise
+                # Function to be executed on Blender's main thread for USDZ export
+                def export_usdz_in_main_thread_cb():
+                    nonlocal usdz_data
+                    global is_exporting_usdz # Declare global to modify the flag
+                    try:
+                        is_exporting_usdz = True # Set flag to True: subsequent depsgraph updates will be ignored
+                        print("DEBUG: Initiating USDZ export in main thread.") 
+                        if bpy.context.view_layer is None:
+                            print("WARNING: No active view layer context for USDZ export. Export might fail.") 
+                        
+                        # Call Blender's USD exporter.
+                        # Note: Arguments used here are generally supported across recent Blender versions.
+                        # If specific arguments cause "unrecognized keyword" errors in your Blender build,
+                        # remove them. Blender's exporter intelligently bundles textures into USDZ.
+                        bpy.ops.wm.usd_export(
+                            filepath=temp_usdz_path, 
+                            check_existing=False,
+                            # Standard export options for a robust USDZ output
+                            selected_objects_only=False,  # Export all visible objects
+                            export_materials=True,        # Export materials (as USD Preview Surface)
+                            export_normals=True,          # Export vertex normals
+                            export_uvmaps=True,           # Export UV maps
+                            export_mesh_colors=False,     # Export vertex colors
+                            export_animation=False,       # Export animations
+                            export_cameras=False,         # Export scene cameras
+                            export_lights=False           # Export scene lights
+                        )
+                        with open(temp_usdz_path, 'rb') as f: 
+                            usdz_data = f.read() 
+                        
+                        print(f"DEBUG: USDZ exported to temp file and read: {len(usdz_data)} bytes.") 
+
+                    except (RuntimeError, OSError, IOError) as e:
+                        print(f"ERROR: USDZ Export Error: {e}") 
+                        error_msg = str(e)
+                        bpy.app.timers.register(lambda msg=error_msg: (bpy.context.scene.vision_pro_streamer_props.status_message_realtime_update(f"Export Error: {msg}"), None)[1])
+                        usdz_data = None
+                    finally:
+                        is_exporting_usdz = False # Reset flag after export attempt
+                        event.set() # Signal the waiting thread that export is complete
+                    return None # Timer callback must return None or a float
+                
+                # Schedule the export function to run on Blender's main thread and wait for it.
+                bpy.app.timers.register(export_usdz_in_main_thread_cb, first_interval=0.01)
+                event.wait(timeout=5) # Wait up to 5 seconds for export to complete
+
+                # If export failed or timed out, skip sending this cycle
+                if not event.is_set() or usdz_data is None: 
+                    print("DEBUG: USDZ export timed out or failed. Skipping send.") 
+                    bpy.app.timers.register(lambda: (bpy.context.scene.vision_pro_streamer_props.status_message_realtime_update("USDZ export failed/timed out."), None)[1])
+                    time.sleep(1 / bpy.context.scene.render.fps) # Sleep to avoid busy-waiting on rapid failure
+                    continue
+
+                # Prepare data for sending: 4-byte length prefix + USDZ data
+                data_length = len(usdz_data) 
+                header = data_length.to_bytes(4, 'big')
+
+                print(f"DEBUG: Attempting to send {data_length} bytes to Vision Pro.")
+                try:
+                    sock.sendall(header + usdz_data) # Send the USDZ data
+                    print("DEBUG: Data sent successfully.")
+                    
+                    # Update status on UI after successful send
+                    fps = bpy.context.scene.render.fps
+                    bpy.app.timers.register(lambda dl=data_length, f=fps: (bpy.context.scene.vision_pro_streamer_props.status_message_realtime_update(f"Sent {dl/1024:.2f} KB. FPS: {f}"), None)[1])
+
+                    # Pause briefly to control streaming rate
+                    time.sleep(1 / fps)
+                except (socket.error, OSError) as e:
+                    print(f"ERROR: Failed to send data: {e}")
+                    raise
+            finally:
+                export_lock.release()
 
     except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError) as e:
         print(f"ERROR: Socket disconnected during streaming: {e}")
