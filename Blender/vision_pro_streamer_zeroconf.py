@@ -469,15 +469,12 @@ def stream_scene_data(sock, stop_event):
                         # Standard export options for a robust USDZ output
                         selected_objects_only=False,  # Export all visible objects
                         export_materials=True,        # Export materials (as USD Preview Surface)
-                        export_textures=True,         # Ensure textures are exported/bundled
-                        export_textures_mode='KEEP',  # Export textures into USDZ path structure
                         export_normals=True,          # Export vertex normals
                         export_uvmaps=True,           # Export UV maps
                         export_mesh_colors=False,     # Export vertex colors
                         export_animation=False,       # Export animations
                         export_cameras=False,         # Export scene cameras
-                        export_lights=False,          # Export scene lights
-                        usdz_downscale_size='KEEP'    # This argument might cause errors depending on Blender version. Keep commented for broad compatibility.
+                        export_lights=False           # Export scene lights
                     )
                     with open(temp_usdz_path, 'rb') as f: 
                         usdz_data = f.read() 
