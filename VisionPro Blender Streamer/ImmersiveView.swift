@@ -15,15 +15,15 @@ struct ImmersiveView: View {
     @State private var dynamicContentAnchor = AnchorEntity()
     
     // StateObject for receiver to observe its statusMessage and access its entity stream
-    @StateObject private var receiver: BlenderSceneReceiver
+    @State private var receiver: BlenderSceneReceiver
     // State for the advertiser (no @Published properties, so @State is fine)
     @State private var advertiser: VisionProServiceAdvertiser
     
     init() {
         // Initialize the receiver and advertiser instances.
         // We can directly use the init of the classes as they no longer need complex closures.
-        _receiver = StateObject(wrappedValue: BlenderSceneReceiver(port: 8080))
-        _advertiser = State(wrappedValue: VisionProServiceAdvertiser())
+        receiver = BlenderSceneReceiver(port: 8080)
+        advertiser = VisionProServiceAdvertiser()
     }
     
     var body: some View {
