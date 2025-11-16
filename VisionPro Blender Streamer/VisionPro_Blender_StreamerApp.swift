@@ -14,9 +14,25 @@ struct VisionPro_Blender_StreamerApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            MainView()
                 .environment(appModel)
         }
+        .defaultLaunchBehavior(.presented)
+        
+        WindowGroup(id: appModel.volumeID) {
+            VolumeView()
+                .environment(appModel)
+                .onAppear {
+                    appModel.volumeState = .open
+                }
+                .onDisappear {
+                    appModel.volumeState = .closed
+                }
+        }
+        .windowStyle(.volumetric)
+        .defaultSize(width: 1, height: 1, depth: 1, in: .meters)
+        .restorationBehavior(.disabled)
+        .defaultLaunchBehavior(.suppressed)
 
         ImmersiveSpace(id: appModel.immersiveSpaceID) {
             ImmersiveView()
@@ -29,5 +45,7 @@ struct VisionPro_Blender_StreamerApp: App {
                 }
         }
         .immersionStyle(selection: .constant(.mixed), in: .mixed)
+        .restorationBehavior(.disabled)
+        .defaultLaunchBehavior(.suppressed)
      }
 }
