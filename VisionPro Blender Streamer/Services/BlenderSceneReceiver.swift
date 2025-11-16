@@ -10,21 +10,28 @@ import Network
 import RealityKit
 import SwiftUI
 
-class BlenderSceneReceiver: NSObject, ObservableObject {
+@Observable
+class BlenderSceneReceiver {
+    
+    @ObservationIgnored
     private var listener: NWListener?
+    
+    @ObservationIgnored
     private var connection: NWConnection?
+    
+    @ObservationIgnored
     private let port: NWEndpoint.Port
     
     // The AsyncStream to send Entity updates
+    @ObservationIgnored
     private var entityUpdateContinuation: AsyncStream<Entity>.Continuation?
     public var sceneEntityUpdates: AsyncStream<Entity>! // Public stream for ContentView
     
-    // Publish updates to SwiftUI views
-    @Published var statusMessage: String = "Not listening"
+    // Updates message to SwiftUI view
+    var statusMessage: String = "Not listening"
     
     init(port: UInt16) {
         self.port = NWEndpoint.Port(rawValue: port)!
-        super.init()
         
         // Initialize the AsyncStream. The continuation will be used to yield entities.
         self.sceneEntityUpdates = AsyncStream { continuation in
