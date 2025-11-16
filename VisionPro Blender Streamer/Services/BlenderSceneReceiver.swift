@@ -128,10 +128,16 @@ class BlenderSceneReceiver: NSObject, ObservableObject {
     private func processData(_ data: Data) {
         Task {
             do {
-                let tempFileURL = FileManager.default.temporaryDirectory.appendingPathComponent("received_scene_\(UUID().uuidString).usdz")
-                try data.write(to: tempFileURL)
+                let entity: Entity
                 
-                let entity = try await Entity(contentsOf: tempFileURL)
+                if #available(visionOS 26, *) {
+                    entity = try await Entity(from: data)
+                } else {
+                    let tempFileURL = FileManager.default.temporaryDirectory.appendingPathComponent("received_scene_\(UUID().uuidString).usdz")
+                    try data.write(to: tempFileURL)
+                    entity = try await Entity(contentsOf: tempFileURL)
+                    try FileManager.default.removeItem(at: tempFileURL)
+                }
                 
                 // Switch to the MainActor and Updated status
                 await MainActor.run {
@@ -141,9 +147,6 @@ class BlenderSceneReceiver: NSObject, ObservableObject {
                 
                 // Yield the new entity to the AsyncStream
                 entityUpdateContinuation?.yield(entity)
-                
-                // Clean up temp file
-                try FileManager.default.removeItem(at: tempFileURL)
                 
             } catch {
                 // Switch to the MainActor for error status update
