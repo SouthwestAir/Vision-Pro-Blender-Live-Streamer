@@ -66,7 +66,7 @@ except ImportError:
 bl_info = {
     "name": "Vision Pro Streamer (Zeroconf)",
     "author": "Your Name",
-    "version": (0, 0, 26),
+    "version": (0, 0, 27),
     "blender": (4, 4, 0),
     "location": "3D Viewport > Sidebar > Vision Pro",
     "description": "Stream Blender scene to Apple Vision Pro in real-time via Zeroconf (mDNS/DNS-SD).",
