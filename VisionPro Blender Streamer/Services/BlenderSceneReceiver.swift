@@ -62,6 +62,11 @@ class BlenderSceneReceiver {
     }
     
     func startListening() {
+        // Prevent double initialization
+        guard listener == nil else {
+            print("Already listening, skipping...")
+            return
+        }
         do {
             listener = try NWListener(using: .tcp, on: port)
             listener?.stateUpdateHandler = { state in
