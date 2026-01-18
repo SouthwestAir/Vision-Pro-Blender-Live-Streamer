@@ -11,19 +11,19 @@ This project consists of:
 
 ## **Features**
 
-* **Automatic Discovery:** Finds Vision Pro devices on your local network via Bonjour/Zeroconf
-* **One-Click Installation:** Auto-installs required dependencies (python-zeroconf) from within Blender
-* **Activity-Based Streaming:** Streams only when you're actively editing, pauses during idle periods to save resources
-* **Real-time USDZ Export:** Exports scenes with materials, textures, and geometry optimized for Apple platforms
-* **Configurable Frame Rate:** Control streaming speed (1-60 FPS)
-* **Immersive Mixed Reality:** Renders scenes in Vision Pro's mixed immersion mode
+- **Automatic Discovery:** Finds Vision Pro devices on your local network via Bonjour/Zeroconf
+- **One-Click Installation:** Auto-installs required dependencies (python-zeroconf) from within Blender
+- **Activity-Based Streaming:** Streams only when you're actively editing, pauses during idle periods to save resources
+- **Real-time USDZ Export:** Exports scenes with materials, textures, and geometry optimized for Apple platforms
+- **Configurable Frame Rate:** Control streaming speed (1-60 FPS)
+- **Immersive Mixed Reality:** Renders scenes in Vision Pro's mixed immersion mode
 
 ## **Requirements**
 
-* **Blender:** 4.4.0 or newer
-* **Apple Vision Pro:** visionOS 1.0 or later
-* **Network:** Both devices on the same local network (Wi-Fi)
-* **Python Library:** python-zeroconf (auto-installed by add-on)
+- **Blender:** 5.0.0 or newer
+- **Apple Vision Pro:** visionOS 1.0 or later
+- **Network:** Both devices on the same local network (Wi-Fi)
+- **Python Library:** python-zeroconf (auto-installed by add-on)
 
 ## **Installation**
 
@@ -32,32 +32,36 @@ This project consists of:
 #### **Quick Install (Recommended)**
 
 1. **Download** the `Blender` folder containing:
+
    - `vision_pro_streamer_zeroconf.py` (main add-on)
    - `Utilities/auto_install_zeroconf.py` (optional dependency installer)
    - `Utilities/uninstall_zeroconf.py` (optional dependency remover)
 
 2. **Install the add-on:**
+
    - Open Blender
    - Go to Edit > Preferences > Add-ons
    - Click "Install..." and select `vision_pro_streamer_zeroconf.py`
    - Enable the add-on: **"Development: Vision Pro Streamer (Zeroconf)"**
 
 3. **Auto-install dependencies:**
+
    - The add-on will attempt to auto-install `python-zeroconf` on first use
    - If auto-install fails, run `Utilities/auto_install_zeroconf.py` with Blender's Python:
+
      - **Option A:** Open Blender's Scripting workspace, open `Utilities/auto_install_zeroconf.py`, and click "Run Script"
      - **Option B:** Run from terminal: (**Note:** Change paths to Blender and Python files where needed)
 
-        ```bash
+       ```bash
        # macOS
        /Applications/Blender.app/Contents/MacOS/Blender --background --python /path/to/Utilities/auto_install_zeroconf.py
-       
+
        # Windows
-       "C:\Program Files\Blender Foundation\Blender 4.4\blender.exe" --background --python "C:\path\to\Utilities\auto_install_zeroconf.py"
-       
+       "C:\Program Files\Blender Foundation\Blender 5.0\blender.exe" --background --python "C:\path\to\Utilities\auto_install_zeroconf.py"
+
        # Linux
-       ~/blender-4.4.0-linux-x64/blender --background --python /path/to/Utilities/auto_install_zeroconf.py
-        ```
+       ~/blender-5.0.0-linux-x64/blender --background --python /path/to/Utilities/auto_install_zeroconf.py
+       ```
 
    - Restart Blender after installation
 
@@ -66,30 +70,36 @@ This project consists of:
 If auto-installation fails:
 
 1. **Locate Blender's Python:**
-   - **macOS:** `/Applications/Blender.app/Contents/Resources/4.4/python/bin/python3`
-   - **Windows:** `C:\Program Files\Blender Foundation\Blender 4.4\4.4\python\bin\python.exe`
-   - **Linux:** `~/blender-4.4.0-linux-x64/4.4/python/bin/python3`
 
-2. **Note:** Replace `4.4` with your installed Blender version (e.g., `4.5`, `4.3`, etc.)
+   - **macOS:** `/Applications/Blender.app/Contents/Resources/5.0/python/bin/python3.11`
+   - **Windows:** `C:\Program Files\Blender Foundation\Blender 5.0\5.0\python\bin\python.exe`
+   - **Linux:** `~/blender-5.0.0-linux-x64/5.0/python/bin/python3`
+
+2. **Note:** Replace `5.0` with your installed Blender version (e.g., `4.4`, `4.5`, etc.)
 
 3. **Install via terminal:**
 
    ```bash
-   "<path_to_blender_python>" -m pip install zeroconf
+   "<path_to_blender_python>" -m pip install --user zeroconf
    ```
 
 4. **Verify:** Check Blender's System Console (Window > Toggle System Console) for "✓ zeroconf loaded"
 
+5. **Note:** The add-on's warning message "Requires a Vision Pro application..." in Preferences is informational only and will always appear, even when zeroconf is properly installed.
+
 ### **2. Vision Pro Application Setup**
 
 1. **Open the Xcode project:**
+
    - Open `VisionPro Blender Streamer.xcodeproj` in Xcode
 
 2. **Configure Info.plist (Already configured, but verify):**
+
    - `NSBonjourServices` contains: `_visionpro_blender._tcp.` and `_visionpro_blender._udp.`
    - `NSLocalNetworkUsageDescription` is set for local network permissions
 
 3. **Build and Deploy:**
+
    - Select your Vision Pro device or Simulator
    - Build and run (⌘R)
    - Grant local network permissions when prompted
@@ -101,16 +111,19 @@ If auto-installation fails:
 ### **Quick Start**
 
 1. **Launch Vision Pro App**
+
    - Open the app on your Vision Pro
    - Tap "Toggle Immersive Space" to enter mixed reality mode
    - App automatically advertises as "MyVisionPro" and listens on port 8080
 
 2. **Open Blender**
+
    - Launch Blender with the add-on enabled
    - Press `N` in the 3D Viewport to open the sidebar
    - Navigate to the **"Vision Pro"** tab
 
 3. **Connect to Vision Pro**
+
    - Click **"Start Discovery"**
    - Wait for "MyVisionPro" to appear in the dropdown (usually 2-5 seconds)
    - Select your device from the list
@@ -155,6 +168,7 @@ If auto-installation fails:
 3. If auto-install fails, use manual installation method (see Installation)
 4. Restart Blender after installation
 5. To uninstall, run `Utilities/uninstall_zeroconf.py` the same way:
+
    ```bash
    /Applications/Blender.app/Contents/MacOS/Blender --background --python /path/to/Utilities/uninstall_zeroconf.py
    ```
@@ -242,15 +256,18 @@ If auto-installation fails:
 ### **Customization**
 
 **Change service name:** Edit `VisionProServiceAdvertiser.swift`, line 16:
+
 ```swift
 netService = NetService(domain: "local.", type: serviceType, name: "YourCustomName", port: servicePort)
 ```
 
 **Change port:** Update both files:
+
 - `VisionProServiceAdvertiser.swift`: `servicePort = 8080`
 - `BlenderSceneReceiver.swift`: `init(port: 8080)`
 
 **Adjust scene position:** Edit `ImmersiveView.swift`, line 32:
+
 ```swift
 dynamicContentAnchor.transform.translation = SIMD3<Float>(x: 0.0, y: 1.0, z: -2.0)
 ```
@@ -259,7 +276,7 @@ dynamicContentAnchor.transform.translation = SIMD3<Float>(x: 0.0, y: 1.0, z: -2.
 
 This project is licensed under the **BSD 3-Clause License**.
 
-Copyright (c) 2025, Southwest Airlines
+Copyright (c) 2025-2026, Southwest Airlines
 All rights reserved.
 
 **Note on Blender Add-on Licensing:**
@@ -283,6 +300,7 @@ Blender is licensed under the GNU GPL. Add-ons using Blender's Python API may be
 ## **Contributing**
 
 Contributions welcome! Please:
+
 - Open issues for bugs or feature requests
 - Submit pull requests with clear descriptions
 - Follow existing code style and structure
