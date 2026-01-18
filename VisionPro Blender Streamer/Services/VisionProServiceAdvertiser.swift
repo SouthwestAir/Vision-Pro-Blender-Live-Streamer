@@ -16,6 +16,11 @@ class VisionProServiceAdvertiser: NSObject, NetServiceDelegate {
     let servicePort: Int32 = 8080 // MUST match Blender's connection port
     
     func startAdvertising() {
+        // Prevent double initialization
+        guard netService == nil else {
+            print("Already advertising, skipping...")
+            return
+        }
         netService = NetService(domain: serviceDomain, type: serviceType, name: "MyVisionPro", port: servicePort)
         netService?.delegate = self
         netService?.includesPeerToPeer = true // For direct device discovery
