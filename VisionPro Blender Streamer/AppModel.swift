@@ -17,5 +17,15 @@ class AppModel {
         case inTransition
         case open
     }
+
     var immersiveSpaceState = ImmersiveSpaceState.closed
+
+    // Shared networking services
+    let receiver = BlenderSceneReceiver(port: 8080)
+    let advertiser = VisionProServiceAdvertiser()
+
+    // Connection status for UI display
+    var isConnected: Bool {
+        receiver.statusMessage.contains("Connected") || receiver.statusMessage.contains("Loaded")
+    }
 }
