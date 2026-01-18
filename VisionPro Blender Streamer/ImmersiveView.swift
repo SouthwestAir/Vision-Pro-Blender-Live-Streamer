@@ -10,21 +10,12 @@ import RealityKit
 import RealityKitContent
 
 struct ImmersiveView: View {
+    // Access the shared AppModel from the environment
+    @Environment(AppModel.self) private var appModel
+    
     // The main container entity for dynamic content.
     // This will hold the current Blender scene.
     @State private var dynamicContentAnchor = AnchorEntity()
-    
-    // StateObject for receiver to observe its statusMessage and access its entity stream
-    @State private var receiver: BlenderSceneReceiver
-    // State for the advertiser (no @Published properties, so @State is fine)
-    @State private var advertiser: VisionProServiceAdvertiser
-    
-    init() {
-        // Initialize the receiver and advertiser instances.
-        // We can directly use the init of the classes as they no longer need complex closures.
-        receiver = BlenderSceneReceiver(port: 8080)
-        advertiser = VisionProServiceAdvertiser()
-    }
     
     var body: some View {
         VStack {
@@ -65,7 +56,7 @@ struct ImmersiveView: View {
                 print("Spatial tap detected in RealityView!")
             })
             .task {
-                for await newEntity in receiver.sceneEntityUpdates {
+                for await newEntity in appModel.receiver.sceneEntityUpdates {
                     // When a new entity arrives, replace the content of the dynamic anchor.
                     // This removes the old scene and adds the new one efficiently.
                     dynamicContentAnchor.children.removeAll()
@@ -83,20 +74,20 @@ struct ImmersiveView: View {
             }
             
             // UI to show connection/stream status from the receiver
-            Text(receiver.statusMessage)
+            Text(appModel.receiver.statusMessage)
                 .font(.title2)
                 .padding()
                 .glassBackgroundEffect()
         }
         .onAppear {
             // Start Bonjour advertising and TCP listening when the view appears
-            advertiser.startAdvertising()
-            receiver.startListening()
+            appModel.advertiser.startAdvertising()
+            appModel.receiver.startListening()
         }
         .onDisappear {
             // Stop services when the view disappears
-            advertiser.stopAdvertising()
-            receiver.stopListening()
+            appModel.advertiser.stopAdvertising()
+            appModel.receiver.stopListening()
             // The Task in RealityView will also be cancelled automatically on disappear
         }
     }
